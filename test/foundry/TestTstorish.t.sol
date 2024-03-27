@@ -16,8 +16,14 @@ contract TestTstorish is Test {
         tstorish = new Tstorish();
     }
 
-    function testActivateTstore() public {
+    function test_fail_activateTstore_alreadyActivated() public {
         vm.expectRevert(abi.encodeWithSignature("TStoreAlreadyActivated()"));
+        vm.prank(address(this), address(this));
+        tstorish.__activateTstore();
+    }
+
+    function test_fail_activateTstore_onlyDirectCalls() public {
+        vm.expectRevert(abi.encodeWithSignature("OnlyDirectCalls()"));
         tstorish.__activateTstore();
     }
 }
