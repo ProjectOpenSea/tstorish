@@ -2,24 +2,23 @@
 pragma solidity ^0.8.24;
 
 contract Tstorish {
-    // Declare a storage variable indicating if TSTORE support has been activated
-    // post-deployment.
+    // Declare a storage variable indicating if TSTORE support has been
+    // activated post-deployment.
     bool private _tstoreSupport;
 
     /*
-     *
-     * --------------------------------------------------------------------------+
-     * Opcode      | Mnemonic         | Stack               | Memory             |
-     * --------------------------------------------------------------------------|
-     * 60 0x02     | PUSH1 0x02       | 0x02                |                    |
-     * 60 0x1e     | PUSH1 0x1e       | 0x1e 0x02           |                    |
-     * 61 0x3d5c   | PUSH2 0x3d5c     | 0x3d5c 0x1e 0x02    |                    |
-     * 3d          | RETURNDATASIZE   | 0 0x3d5c 0x1e 0x02  |                    |
-     *                                                                           |
-     * ::: store deployed bytecode in memory: (3d) RETURNDATASIZE (5c) TLOAD ::: |
-     * 52          | MSTORE           | 0x1e 0x02           | [0..0x20): 0x3d5c  |
-     * f3          | RETURN           |                     | [0..0x20): 0x3d5c  |
-     * --------------------------------------------------------------------------+
+     * ------------------------------------------------------------------------+
+     * Opcode      | Mnemonic         | Stack              | Memory            |
+     * ------------------------------------------------------------------------|
+     * 60 0x02     | PUSH1 0x02       | 0x02               |                   |
+     * 60 0x1e     | PUSH1 0x1e       | 0x1e 0x02          |                   |
+     * 61 0x3d5c   | PUSH2 0x3d5c     | 0x3d5c 0x1e 0x02   |                   |
+     * 3d          | RETURNDATASIZE   | 0 0x3d5c 0x1e 0x02 |                   |
+     *                                                                         |
+     * :: store deployed bytecode in memory: (3d) RETURNDATASIZE (5c) TLOAD :: |
+     * 52          | MSTORE           | 0x1e 0x02          | [0..0x20): 0x3d5c |
+     * f3          | RETURN           |                    | [0..0x20): 0x3d5c |
+     * ------------------------------------------------------------------------+
      */
     uint256 constant _TLOAD_TEST_PAYLOAD = 0x6002_601e_613d5c_3d_52_f3;
     uint256 constant _TLOAD_TEST_PAYLOAD_LENGTH = 0x0a;
@@ -35,6 +34,7 @@ contract Tstorish {
     error TStoreAlreadyActivated();
     error TStoreNotSupported();
     error TloadTestContractDeploymentFailed();
+    error OnlyDirectCalls();
 
     /**
      * @dev Determine TSTORE availability during deployment. This involves
@@ -65,11 +65,15 @@ contract Tstorish {
      * @dev External function to activate TSTORE usage. Does not need to be
      *      called if TSTORE is supported from deployment, and only needs to be
      *      called once. Reverts if TSTORE has already been activated or if the
-     *      opcode is not available. Note that this may be vulnerable to various
-     *      reentrancy issues; if this is a concern, place this function behind
-     *      the reentrancy guard to ensure that it is not triggered inflight.
+     *      opcode is not available. Note that this must be called directly from
+     *      an externally-owned account to avoid potential reentrancy issues.
      */
     function __activateTstore() external {
+        // Ensure this function is triggered from an externally-owned account.
+        if (msg.sender != tx.origin) {
+            revert OnlyDirectCalls();
+        }
+
         // Determine if TSTORE can potentially be activated.
         if (_tstoreInitialSupport || _tstoreSupport) {
             revert TStoreAlreadyActivated();
