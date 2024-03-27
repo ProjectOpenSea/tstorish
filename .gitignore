@@ -2,6 +2,11 @@
 cache/
 out/
 
+#foundry test compilation files
+cache
+out
+test-cache
+
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
