@@ -8,11 +8,16 @@ import {Tstorish} from "../../src/Tstorish.sol";
 contract TestTstorish is Test {
     Tstorish tstorish;
 
-    function setUp() public override {
+    function setUp() public {
         _deployTstorish();
     }
 
     function _deployTstorish() private {
         tstorish = new Tstorish();
+    }
+
+    function testActivateTstore() public {
+        vm.expectRevert(abi.encodeWithSignature("TStoreAlreadyActivated()"));
+        tstorish.__activateTstore();
     }
 }
