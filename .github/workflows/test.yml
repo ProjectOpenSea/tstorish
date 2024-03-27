@@ -19,8 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
-          token: ${{ secrets.GH_PAT_TOKEN }}
           submodules: recursive
 
       - name: Install Foundry
