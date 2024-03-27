@@ -8,4 +8,8 @@ remappings = [
     'forge-std/=lib/forge-std/src/',
     ]
 
+[profile.test]
+src = 'test/foundry'
+cache_path='test-cache'
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
