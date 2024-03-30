@@ -24,11 +24,23 @@ contract Tstorish {
     uint256 constant _TLOAD_TEST_PAYLOAD_LENGTH = 0x0a;
     uint256 constant _TLOAD_TEST_PAYLOAD_OFFSET = 0x16;
 
-    // Declare an immutable variable to store the initial TSTORE support status.
-    bool private immutable _tstoreInitialSupport;
-
     // Declare an immutable variable to store the tstore test contract address.
     address private immutable _tloadTestContract;
+
+    // Declare an immutable variable to store the initial TSTORE support status.
+    bool immutable _tstoreInitialSupport;
+
+    // Declare an immutable function type variable for the _setTstorish function
+    // based on chain support for tstore at time of deployment.
+    function(uint256,uint256) internal immutable _setTstorish;
+
+    // Declare an immutable function type variable for the _getTstorish function
+    // based on chain support for tstore at time of deployment.
+    function(uint256) view returns (uint256) internal immutable _getTstorish;
+
+    // Declare an immutable function type variable for the _clearTstorish function
+    // based on chain support for tstore at time of deployment.
+    function(uint256) internal immutable _clearTstorish;
 
     // Declare a few custom revert error types.
     error TStoreAlreadyActivated();
@@ -54,7 +66,20 @@ contract Tstorish {
         // Determine if TSTORE is supported.
         bool tstoreInitialSupport = _testTload(tloadTestContract);
 
-        // Store the result as an immutable.
+        if (tstoreInitialSupport) {
+            // If TSTORE is supported, set functions to their versions that use
+            // tstore/tload directly without support checks.
+            _setTstorish = _setTstore;
+            _getTstorish = _getTstore;
+            _clearTstorish = _clearTstore;
+        } else {
+            // If TSTORE is not supported, set functions to their versions that 
+            // fallback to sstore/sload until _tstoreSupport is true.
+            _setTstorish = _setTstorishWithSstoreFallback;
+            _getTstorish = _getTstorishWithSloadFallback;
+            _clearTstorish = _clearTstorishWithSstoreFallback;
+        }
+
         _tstoreInitialSupport = tstoreInitialSupport;
 
         // Set the address of the deployed TLOAD test contract as an immutable.
@@ -89,17 +114,28 @@ contract Tstorish {
     }
 
     /**
-     * @dev Internal function to set a TSTORISH value.
+     * @dev Private function to set a TSTORISH value. Assigned to _setTstorish 
+     *      internal function variable at construction if chain has tstore support.
      *
      * @param storageSlot The slot to write the TSTORISH value to.
      * @param value       The value to write to the given storage slot.
      */
-    function _setTstorish(uint256 storageSlot, uint256 value) internal {
-        if (_tstoreInitialSupport) {
-            assembly {
-                tstore(storageSlot, value)
-            }
-        } else if (_tstoreSupport) {
+    function _setTstore(uint256 storageSlot, uint256 value) private {
+        assembly {
+            tstore(storageSlot, value)
+        }
+    }
+
+    /**
+     * @dev Private function to set a TSTORISH value with sstore fallback. 
+     *      Assigned to _setTstorish internal function variable at construction
+     *      if chain does not have tstore support.
+     *
+     * @param storageSlot The slot to write the TSTORISH value to.
+     * @param value       The value to write to the given storage slot.
+     */
+    function _setTstorishWithSstoreFallback(uint256 storageSlot, uint256 value) private {
+        if (_tstoreSupport) {
             assembly {
                 tstore(storageSlot, value)
             }
@@ -111,20 +147,34 @@ contract Tstorish {
     }
 
     /**
-     * @dev Internal function to read a TSTORISH value.
+     * @dev Private function to read a TSTORISH value. Assigned to _getTstorish
+     *      internal function variable at construction if chain has tstore support.
      *
      * @param storageSlot The slot to read the TSTORISH value from.
      *
      * @return value The TSTORISH value at the given storage slot.
      */
-    function _getTstorish(
+    function _getTstore(
         uint256 storageSlot
-    ) internal view returns (uint256 value) {
-        if (_tstoreInitialSupport) {
-            assembly {
-                value := tload(storageSlot)
-            }
-        } else if (_tstoreSupport) {
+    ) private view returns (uint256 value) {
+        assembly {
+            value := tload(storageSlot)
+        }
+    }
+
+    /**
+     * @dev Private function to read a TSTORISH value with sload fallback. 
+     *      Assigned to _getTstorish internal function variable at construction
+     *      if chain does not have tstore support.
+     *
+     * @param storageSlot The slot to read the TSTORISH value from.
+     *
+     * @return value The TSTORISH value at the given storage slot.
+     */
+    function _getTstorishWithSloadFallback(
+        uint256 storageSlot
+    ) private view returns (uint256 value) {
+        if (_tstoreSupport) {
             assembly {
                 value := tload(storageSlot)
             }
@@ -136,16 +186,26 @@ contract Tstorish {
     }
 
     /**
-     * @dev Internal function to clear a TSTORISH value.
+     * @dev Private function to clear a TSTORISH value. Assigned to _clearTstorish internal 
+     *      function variable at construction if chain has tstore support.
      *
      * @param storageSlot The slot to clear the TSTORISH value for.
      */
-    function _clearTstorish(uint256 storageSlot) internal {
-        if (_tstoreInitialSupport) {
-            assembly {
-                tstore(storageSlot, 0)
-            }
-        } else if (_tstoreSupport) {
+    function _clearTstore(uint256 storageSlot) private {
+        assembly {
+            tstore(storageSlot, 0)
+        }
+    }
+
+    /**
+     * @dev Private function to clear a TSTORISH value with sstore fallback. 
+     *      Assigned to _clearTstorish internal function variable at construction
+     *      if chain does not have tstore support.
+     *
+     * @param storageSlot The slot to clear the TSTORISH value for.
+     */
+    function _clearTstorishWithSstoreFallback(uint256 storageSlot) private {
+        if (_tstoreSupport) {
             assembly {
                 tstore(storageSlot, 0)
             }
