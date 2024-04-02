@@ -28,7 +28,7 @@ contract Tstorish {
     address private immutable _tloadTestContract;
 
     // Declare an immutable variable to store the initial TSTORE support status.
-    bool immutable _tstoreInitialSupport;
+    bool private immutable _tstoreInitialSupport;
 
     // Declare an immutable function type variable for the _setTstorish function
     // based on chain support for tstore at time of deployment.
